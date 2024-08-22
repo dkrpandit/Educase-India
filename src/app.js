@@ -24,13 +24,35 @@ db.connect((err) => {
 /*--------------------------- routes --------------------------------*/
 
 app.post("/addSchool", (req, res) => {
-    console.log(req.body)
+    console.log(req.body);
     const { name, address, latitude, longitude } = req.body;
-    db.query('INSERT INTO schools (name,address,latitude,longitude) VALUES (?, ?, ?, ?)', [name, address, latitude, longitude], (err, result) => {
-        if (err) throw err;
-        res.json({ message: 'School added successfully', id: result.insertId });
-    })
-})
+
+    // Check if the school with the same name already exists
+    const checkQuery = 'SELECT * FROM schools WHERE name = ?';
+    db.query(checkQuery, [name], (err, results) => {
+        if (err) {
+            console.error('Error checking for existing school:', err.message);
+            return res.status(500).json({ message: 'Internal Server Error' });
+        }
+
+        if (results.length > 0) {
+            // School with the same name already exists
+            return res.status(409).json({ message: 'School with this name already exists in the database' });
+        }
+
+        // If the school name does not exist, insert it
+        const insertQuery = 'INSERT INTO schools (name, address, latitude, longitude) VALUES (?, ?, ?, ?)';
+        db.query(insertQuery, [name, address, latitude, longitude], (err, result) => {
+            if (err) {
+                console.error('Error adding school:', err.message);
+                return res.status(500).json({ message: 'Internal Server Error' });
+            }
+            res.status(201).json({ message: 'School added successfully', id: result.insertId });
+        });
+    });
+});
+
+
 
 // Helper function to calculate distance using Haversine formula
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
