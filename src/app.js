@@ -1,12 +1,14 @@
 const dotenv = require('dotenv');
 
 const express = require('express')
-const router = require("../router/auth.router");
-const mysql = require('mysql2');
+// const router = require("../router/auth.router");
 const app = express()
 dotenv.config();
-app.use(router);
+app.use(express.json());
+// app.use(router);
 
+/* ----------------  connecting databases  --------------------------- */
+const mysql = require('mysql2');
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -21,5 +23,16 @@ db.connect((err) => {
     }
     console.log('Connected to MySQL database');
 });
+
+/*--------------------------- routes --------------------------------*/
+
+app.post("/addSchool", (req, res) => {
+    console.log(req.body)
+    const { name, address, latitude, longitude } = req.body;
+    db.query('INSERT INTO schools (name,address,latitude,longitude) VALUES (?, ?, ?, ?)', [name, address, latitude, longitude], (err, result) => {
+        if (err) throw err;
+        res.json({ message: 'School added successfully', id: result.insertId });
+    })
+})
 
 module.exports = app;
